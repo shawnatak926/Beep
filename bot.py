@@ -3,7 +3,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import requests
 import json
 
-TOKEN = "MTQ4ODQ1MDc4MzQ1OTY3NjIxMA.G5WL4s.XO3D9bCw15WGyJD82QMzfri_ZDZAkNfRnMHwww"
+TOKEN = "MTQ4ODQ1MDc4MzQ1OTY3NjIxMA.G65BLL.PqFcICDXtsh9j51GJQd3XlVxn3Z9Iw0Wl-vJJU"
 CHANNEL_ID = 1488451289976275037
 
 def get_sheet_data():
