@@ -1,1 +1,3 @@
 bot.py
+apscheduler
+requests
