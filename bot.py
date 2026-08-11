@@ -1,13 +1,20 @@
-import discord
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import requests
 import json
+import os
 from datetime import datetime
 
-TOKEN = "MTQ4ODQ1MDc4MzQ1OTY3NjIxMA.G65BLL.PqFcICDXtsh9j51GJQd3XlVxn3Z9Iw0Wl-vJJU"
-CHANNEL_ID = 1488451289976275037
+import discord
+import requests
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-# ================== 당직표 ==================
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID", "0"))
+
+if not TOKEN:
+    raise ValueError("DISCORD_BOT_TOKEN 환경변수가 필요합니다.")
+
+if CHANNEL_ID == 0:
+    raise ValueError("DISCORD_CHANNEL_ID 환경변수가 필요합니다.")
+
 def get_sheet_data():
     url = "https://docs.google.com/spreadsheets/d/1NBGqXzb-VrFiZUu0y4t7qIWeg69HQjDFgHN8RMOQr8s/gviz/tq?tqx=out:json&gid=1166955981"
 
@@ -38,7 +45,6 @@ async def send_sheet(channel):
     await channel.send(message)
 
 
-# ================== 시간표 ==================
 def get_timetable_data():
     return {
         "월": ["자율", "한국", "소공", "실영", "웹프", "웹프", "대수"],
@@ -68,7 +74,6 @@ def format_timetable_table():
     return "```" + "\n".join(lines) + "```"
 
 
-# ================== 다음 수업 ==================
 def get_next_class():
     timetable = get_timetable_data()
     days = ["월", "화", "수", "목", "금"]
@@ -101,7 +106,6 @@ def get_next_class():
     return "🏫 오늘 수업 끝!"
 
 
-# ================== 수업 종료 알림 ==================
 def get_current_and_next_class():
     """Returns current class and next class info"""
     timetable = get_timetable_data()
@@ -176,7 +180,6 @@ async def send_class_end_notification(channel):
     await channel.send(message)
 
 
-# ================== 디스코드 ==================
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -219,7 +222,7 @@ async def on_message(message):
         await send_sheet(message.channel)
 
     # 📚 시간표 (표)
-    if message.content == "!시간표" or message.content == "!우성민r":
+    if message.content == "!시간표" or message.content == "!우성민":
         await message.channel.send("📚 2-3 시간표\n" + format_timetable_table())
         await message.channel.send(get_next_class())
 
