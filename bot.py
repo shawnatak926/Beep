@@ -4,6 +4,7 @@ import os
 import time
 from datetime import datetime
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import discord
 import requests
@@ -26,6 +27,7 @@ COMCI_SCHOOL_NAME = "대구소프트웨어고등학교"
 COMCI_TARGET_GRADE = 2
 COMCI_TARGET_CLASS = 3
 COMCI_CACHE_TTL_SECONDS = 300
+KST = ZoneInfo("Asia/Seoul")
 
 _comci_cache = {
     "expires_at": 0.0,
@@ -58,6 +60,10 @@ def get_sheet_data():
 
 
 async def send_sheet(channel):
+    if channel is None:
+        print("당직표 전송 실패: CHANNEL_ID에 해당하는 채널을 찾을 수 없습니다.")
+        return
+
     data = get_sheet_data()
     message = "\n".join([f"{grade}: {name}" for grade, name in data.items()])
     await channel.send(message)
@@ -185,11 +191,16 @@ def format_timetable_table():
     return "```" + "\n".join(lines) + "```"
 
 
+def get_now_kst():
+    return datetime.now(KST)
+
+
 def get_next_class():
     timetable = get_timetable_data()
     days = ["월", "화", "수", "목", "금"]
 
-    today = datetime.now().weekday()
+    now_kst = get_now_kst()
+    today = now_kst.weekday()
     if today >= 5:
         return "🏫 주말에는 수업 없음"
 
@@ -203,7 +214,7 @@ def get_next_class():
         ("7교시", "15:30", "16:20"),
     ]
 
-    now = datetime.now().time()
+    now = now_kst.time()
 
     for i, (_, start, _) in enumerate(schedule):
         start_t = datetime.strptime(start, "%H:%M").time()
@@ -222,7 +233,8 @@ def get_current_and_next_class():
     timetable = get_timetable_data()
     days = ["월", "화", "수", "목", "금"]
 
-    today = datetime.now().weekday()
+    now_kst = get_now_kst()
+    today = now_kst.weekday()
     if today >= 5:
         return None
 
@@ -236,7 +248,7 @@ def get_current_and_next_class():
         ("7 교시", "15:30", "16:20"),
     ]
 
-    now = datetime.now().time()
+    now = now_kst.time()
 
     for i, (_, start, end) in enumerate(schedule):
         start_t = datetime.strptime(start, "%H:%M").time()
@@ -263,14 +275,18 @@ def get_current_and_next_class():
 
 async def send_class_end_notification(channel):
     """Send notification when class ends or before first period"""
-    now = datetime.now().time()
-    first_period_start = datetime.strptime("08:50", "%H:%M").time()
+    if channel is None:
+        print("수업 알림 전송 실패: CHANNEL_ID에 해당하는 채널을 찾을 수 없습니다.")
+        return
+
+    now_kst = get_now_kst()
+    now = now_kst.time()
 
     # 8:40 AM - announce first period
     if now.hour == 8 and now.minute < 45:
         timetable = get_timetable_data()
         days = ["월", "화", "수", "목", "금"]
-        today = datetime.now().weekday()
+        today = now_kst.weekday()
 
         if today < 5:
             first_subject = timetable[days[today]][0]
