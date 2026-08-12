@@ -35,6 +35,28 @@ _comci_cache = {
     "data": None,
 }
 
+HELP_MESSAGE = """```text
+사용 가능한 명령어
+
+!도움말
+- 명령어 목록 보기
+
+!시간표
+- 2학년 3반 시간표 보기
+
+!우성민
+- !시간표와 동일
+
+!당직
+- 당직표 보기
+
+!clear 숫자
+- 최근 메시지 삭제
+
+!clean 이름 숫자
+- 특정 유저 메시지 삭제
+```"""
+
 def get_sheet_data():
     url = "https://docs.google.com/spreadsheets/d/1NBGqXzb-VrFiZUu0y4t7qIWeg69HQjDFgHN8RMOQr8s/gviz/tq?tqx=out:json&gid=1166955981"
 
@@ -343,6 +365,9 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
+
+    if message.content == "!도움말":
+        await message.channel.send(HELP_MESSAGE)
 
     # 📋 당직표
     if message.content == "!당직":
