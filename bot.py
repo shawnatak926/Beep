@@ -351,15 +351,6 @@ async def on_message(message):
     # 📚 시간표 (표)
     if message.content == "!시간표" or message.content == "!우성민":
         await message.channel.send("📚 2-3 시간표\n" + format_timetable_table())
-        await message.channel.send(get_next_class())
-
-
-    # ⏭️ 다음 수업
-    if message.content == "!다음수업":
-        await message.channel.send(get_next_class())
-
-    if message.content == "!다음시간":
-        await message.channel.send(get_next_class())
 
     # 🧹 전체 삭제
     if message.content.startswith("!clear"):
