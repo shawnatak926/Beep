@@ -47,6 +47,9 @@ HELP_MESSAGE = """```text
 !우성민
 - !시간표와 동일
 
+!이용인
+- 이용인 이모티콘 보내기
+
 !당직
 - 당직표 보기
 
@@ -368,6 +371,9 @@ async def on_message(message):
 
     if message.content == "!도움말":
         await message.channel.send(HELP_MESSAGE)
+
+    if message.content == "!이용인":
+        await message.channel.send("<:yongin:1537058522053742654>")
 
     # 📋 당직표
     if message.content == "!당직":
