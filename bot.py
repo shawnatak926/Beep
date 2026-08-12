@@ -1,6 +1,9 @@
+import base64
 import json
 import os
+import time
 from datetime import datetime
+from urllib.parse import quote
 
 import discord
 import requests
@@ -17,6 +20,18 @@ if not TOKEN:
 
 if CHANNEL_ID == 0:
     raise ValueError("DISCORD_CHANNEL_ID 환경변수가 필요합니다.")
+
+COMCI_BASE_URL = "http://comci.net:4082"
+COMCI_SCHOOL_NAME = "대구소프트웨어고등학교"
+COMCI_TARGET_GRADE = 2
+COMCI_TARGET_CLASS = 3
+COMCI_CACHE_TTL_SECONDS = 300
+
+_comci_cache = {
+    "expires_at": 0.0,
+    "school_code": None,
+    "data": None,
+}
 
 def get_sheet_data():
     url = "https://docs.google.com/spreadsheets/d/1NBGqXzb-VrFiZUu0y4t7qIWeg69HQjDFgHN8RMOQr8s/gviz/tq?tqx=out:json&gid=1166955981"
@@ -48,7 +63,7 @@ async def send_sheet(channel):
     await channel.send(message)
 
 
-def get_timetable_data():
+def get_fallback_timetable_data():
     return {
         "월": ["자율", "확통", "디자", "디자", "국어", "체육2", "한국"],
         "화": ["확통", "네트", "네트", "한국", "자바2", "자바2", "직영"],
@@ -56,6 +71,99 @@ def get_timetable_data():
         "목": ["체육2", "진로", "자바2", "자바2", "인모", "인모", "인모"],
         "금": ["웹프", "웹프", "네트", "네트", "한국", "", ""]
     }
+
+
+def _clean_comci_response(response):
+    return response.content.decode("utf-8", "ignore").split("\x00")[0]
+
+
+def _extract_cell_value(cell):
+    if cell is None:
+        return 0
+
+    if isinstance(cell, str):
+        cell = cell.lstrip(">")
+        if not cell:
+            return 0
+
+    try:
+        return int(cell)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _decode_subject_name(cell, subjects):
+    value = _extract_cell_value(cell)
+    if value <= 0:
+        return ""
+
+    subject_index = value // 1000
+    if 0 <= subject_index < len(subjects):
+        return subjects[subject_index]
+    return ""
+
+
+def _find_school_code():
+    if _comci_cache["school_code"] is not None:
+        return _comci_cache["school_code"]
+
+    encoded_name = quote(COMCI_SCHOOL_NAME.encode("euc-kr"))
+    response = requests.get(
+        f"{COMCI_BASE_URL}/36179?17384l{encoded_name}",
+        timeout=10,
+    )
+    response.raise_for_status()
+    payload = json.loads(_clean_comci_response(response))
+
+    for school in payload.get("학교검색", []):
+        if len(school) >= 4 and school[2] == COMCI_SCHOOL_NAME:
+            _comci_cache["school_code"] = school[3]
+            return school[3]
+
+    raise ValueError(f"{COMCI_SCHOOL_NAME} 학교 코드를 찾을 수 없습니다.")
+
+
+def _fetch_comci_data():
+    now = time.time()
+    if _comci_cache["data"] and _comci_cache["expires_at"] > now:
+        return _comci_cache["data"]
+
+    school_code = _find_school_code()
+    payload = f"73629_{school_code}_0_1"
+    encoded_payload = base64.b64encode(payload.encode()).decode()
+    response = requests.get(f"{COMCI_BASE_URL}/36179?{encoded_payload}", timeout=10)
+    response.raise_for_status()
+    data = json.loads(_clean_comci_response(response))
+
+    _comci_cache["data"] = data
+    _comci_cache["expires_at"] = now + COMCI_CACHE_TTL_SECONDS
+    return data
+
+
+def get_timetable_data():
+    fallback = get_fallback_timetable_data()
+
+    try:
+        data = _fetch_comci_data()
+        subjects = data["자료492"]
+        raw_timetable = data["자료481"][COMCI_TARGET_GRADE][COMCI_TARGET_CLASS]
+        days = ["월", "화", "수", "목", "금"]
+
+        timetable = {}
+        for day_index, day_name in enumerate(days, start=1):
+            day_rows = raw_timetable[day_index]
+            period_count = day_rows[0]
+            periods = []
+            for period_index in range(1, period_count + 1):
+                periods.append(_decode_subject_name(day_rows[period_index], subjects))
+            while len(periods) < 7:
+                periods.append("")
+            timetable[day_name] = periods[:7]
+
+        return timetable
+    except Exception as exc:
+        print(f"컴시간 조회 실패, 기본 시간표 사용: {exc}")
+        return fallback
 
 
 def format_timetable_table():
@@ -285,4 +393,5 @@ async def on_message(message):
         await message.channel.send(f"🧹 {member.display_name} {len(deleted)}개 삭제", delete_after=3)
 
 
-client.run(TOKEN)
+if __name__ == "__main__":
+    client.run(TOKEN)
