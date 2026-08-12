@@ -5,6 +5,9 @@ from datetime import datetime
 import discord
 import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from dotenv import load_dotenv
+
+load_dotenv()
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID", "0"))
@@ -47,11 +50,11 @@ async def send_sheet(channel):
 
 def get_timetable_data():
     return {
-        "월": ["자율", "한국", "소공", "실영", "웹프", "웹프", "대수"],
-        "화": ["체육2", "시스", "자바", "자바", "디자", "디자", "국어"],
-        "수": ["자바", "자바", "한국", "체육2", "국어", "대수", "동아"],
-        "목": ["시스", "시스", "소공", "소공", "실영", "웹프", "웹프"],
-        "금": ["웹프", "한국", "진로", "자바", "대수", "", ""]
+        "월": ["자율", "확통", "디자", "디자", "국어", "체육2", "한국"],
+        "화": ["확통", "네트", "네트", "한국", "자바2", "자바2", "직영"],
+        "수": ["확통", "웹프", "웹프", "웹프", "직영", "국어", "동아"],
+        "목": ["체육2", "진로", "자바2", "자바2", "인모", "인모", "인모"],
+        "금": ["웹프", "웹프", "네트", "네트", "한국", "", ""]
     }
 
 
