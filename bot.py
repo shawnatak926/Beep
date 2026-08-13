@@ -177,7 +177,8 @@ def get_timetable_data():
     try:
         data = _fetch_comci_data()
         subjects = data["자료492"]
-        raw_timetable = data["자료481"][COMCI_TARGET_GRADE][COMCI_TARGET_CLASS]
+        # 자료147에는 변경 반영 시간표가, 자료481에는 기본 시간표가 담겨 있다.
+        raw_timetable = data["자료147"][COMCI_TARGET_GRADE][COMCI_TARGET_CLASS]
         days = ["월", "화", "수", "목", "금"]
 
         timetable = {}
