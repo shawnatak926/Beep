@@ -377,7 +377,7 @@ async def on_message(message):
         await message.channel.send("<:yongin:1537058522053742654>")
 
     if message.content == "!천준범":
-        await message.channel.send("<:cheonjunbeom:1537058282768826498>")
+        await message.channel.send("<:cheonjunbeom:1539438645205930046>")
 
     # 📋 당직표
     if message.content == "!당직":
